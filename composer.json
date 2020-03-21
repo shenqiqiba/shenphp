@@ -1,0 +1,23 @@
+{
+"name": "shenqiqiba/shenphp",
+"description": "shenphp框架而已",
+"license": "MIT",
+"homepage": "https://github.com/shenqiqiba/shenphp",
+"keywords": [
+		"shenqi",
+		"php"
+	],
+  "authors": [
+      {
+      "name": "shenqi",
+      "email": "97302834@qq.com"
+      }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+  "php": ">=7.0"
+  },
+  "autoload" : {
+     "psr-4": { "NoahBuscher\\Macaw\\": "./" }
+  }
+}
