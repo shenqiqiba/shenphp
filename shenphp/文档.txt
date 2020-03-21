@@ -1,0 +1,306 @@
+==============在线文档======================
+
+https://www.kancloud.cn/yms977921797/shenphp/content
+
+控制器||类的加载
+理论上 只要你的命名空间是你的类文件所处的路径。
+遵循PSR-2命名规范和PSR-4自动加载规范 基本都可以加载
+
+目录和文件
+目录使用小写+下划线；
+类库、函数文件统一以.php为后缀；
+类的文件名均以命名空间定义，并且命名空间的路径和类库文件所在路径一致；
+类文件采用驼峰法命名（首字母大写），其它文件采用小写+下划线命名；
+类名和类文件名保持一致，统一采用驼峰法命名（首字母大写）；
+函数和类、属性命名
+类的命名采用驼峰法（首字母大写），例如User、UserType，默认不需要添加后缀，例如UserController应该直接命名为User；
+函数的命名使用小写字母和下划线（小写字母开头）的方式，例如get_client_ip；
+方法的命名使用驼峰法（首字母小写），例如getUserName；
+属性的命名使用驼峰法（首字母小写），例如tableName、instance；
+特例：以双下划线__打头的函数或方法作为魔术方法，例如__call和__autoload；
+常量和配置
+常量以大写字母和下划线命名，例如APP_PATH；
+配置参数以小写字母和下划线命名，例如url_route_on和url_convert；
+环境变量定义使用大写字母和下划线命名，例如DEBUG；
+数据表和字段
+~~你【几乎】可以在任意位置新建模块 然后在新建一个controller文件夹 然后在里面新建类文件 符合命名空间命名规范都可以加载 ~~
+
+【仅支持根目录新建模块 不然url生成会出问题，路由模式3除外】
+pathinfo路由情况下 只能根目录
+
+比如app\controller下新建Index.php
+命名空间就是
+
+namespace app\controller;
+
+
+路由支持三种模式：
+在config/route中配置type
+
+1.传统模式
+2.pathinfo方式
+> 3.自定义路由模式【后续在开发】
+
+路由后缀，仅支持路由模式也就是3号
+
+'url_suffix'=>'.html',
+路由模式的路由在根目录的route.php可以配置
+### 区别说明：
+1.传统模式
+
+http://shenphp.com/index.php?m=app&a=index&c=index&qq=5
+http://shenphp.com/m=app&a=index&c=index&qq=5
+http://shenphp.com/?m=app&a=index&c=index&qq=5
+可以随意传参，随意接受参数。必须带上m模块 c控制器和a方法。可以使用$_GET获取参数。
+预留：可能后期会进行过滤一下 或者其他方式也能接收参数
+
+2.pathinfo方式
+
+http://shenphp.com/index.php?/app/index/index/qq/5
+http://shenphp.com/app/index/index/qq/5
+http://shenphp.com/?/app/index/index/qq/5
+可以随意传参，随意接受参数。但是前三个必须是模块/控制器/方法。
+参数框架也自行提取 塞到了$_GET里面 也可以获取 格式必须统一
+
+模块/控制器/方法/参数名/参数值/参数名/参数值
+
+3.路由模式【暂时无效】
+
+\shenphp\lib\Route::get('/cc','app/index@index');
+\shenphp\lib\Route::get('/cc/id/(:any)','app/index@index');
+前面是定义的地址 后面是地址对应的模块 控制器和方法名。
+注意：控制器和方法用@隔开
+可以随意自定义 但是注意 这里除了可以在控制器绑定参数之外
+还可以使用$_GET获取 但是$_GET没有参数名 只有参数值 你可以按照url中的参数顺序获得里面的参数值。
+用isset判断值是否存在
+
+路由模式实例：
+
+use \shenphp\lib\Route;
+Route::get('/', function() {
+  echo 'Hello world!';
+});
+
+Route::dispatch();
+
+Route::get('/(:any)', function($slug) {
+  echo 'The slug is: ' . $slug;
+});
+
+Route::dispatch();
+
+
+Route::get('/', function() {
+  echo 'I'm a GET request!';
+});
+
+Route::post('/', function() {
+  echo 'I'm a POST request!';
+});
+
+Route::any('/', function() {
+  echo 'I can be both a GET and a POST request!';
+});
+
+Route::dispatch();
+
+
+Route::error(function() {
+  echo '404 :: Not Found';
+});
+require('vendor/autoload.php');
+
+use NoahBuscher\Route\Route;
+
+Route::get('/', 'Controllers\demo@index');
+Route::get('page', 'Controllers\demo@page');
+Route::get('view/(:num)', 'Controllers\demo@view');
+
+Route::dispatch();
+demo.php
+
+<?php
+namespace controllers;
+
+class Demo {
+
+    public function index()
+    {
+        echo 'home';
+    }
+
+    public function page()
+    {
+        echo 'page';
+    }
+
+    public function view($id)
+    {
+        echo $id;
+    }
+
+}
+.htaccess(Apache):
+
+RewriteEngine On
+RewriteBase /
+
+# Allow any files or directories that exist to be displayed directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^(.*)$ index.php?$1 [QSA,L]
+.htaccess(Nginx):
+
+rewrite ^/(.)/$ /$1 redirect;
+if (!-e $request_filename){
+rewrite ^(.)$ /index.php break;
+}
+
+路由来源：https://github.com/noahbuscher/macaw
+然后自己二次修改过的 添加了其他两个模式
+
+
+读取配置
+你可以使用配置类去加载已经定义好的配置，而且你不用担心会遇到重复加载的情况
+
+加载单个配置文件中的值
+$value = \ppphp\conf::get('变量名','文件名');
+
+route是文件名 对应config下面的route.php
+type代表配置项 也就是return['type'=3]这个配置
+
+\shenphp\lib\Config::get('route','type');
+加载增加配置文件
+在某些情况下，你需要引入同一个配置文件的多个变量，你可以使用all方法，直接引入整个配置文件
+
+$value = \ppphp\conf::all('文件名');
+\shenphp\lib\Config::all('route');
+这样你就可以得到配置文件当中的全部数据了
+
+
+SHENPHP提供了最简单的日志方法，如果有需要 您可以自己随意扩展。
+仅仅几句代码
+
+addlog($level, $message)
+\shenphp\lib\Log::addlog(1,'测试下日志');
+
+
+目前缓存 提供了file memched和redis
+由于系统开发环境原因 仅测试了file缓存，其他两个待测试。
+
+\shenphp\lib\cache::set('AA','WW');
+\shenphp\lib\cache::set('2AA','2WW');
+set($key,$data,$lifetime = 4747)
+设置缓存
+获取缓存
+get($key)
+判断缓存是否存在
+has($key)
+删除缓存
+del($key)
+清空缓存（file缓存会删除cache目录下的文件[包括文件夹]）
+clear()
+
+
+普通查询
+数据库用的是medoo的类库
+https://medoo.lvtao.net/1.2/doc.insert.php
+https://medoo.in/api/raw
+
+use shenphp\lib\Db;
+$db=new Db($op);
+        $db->insert('article', [
+            'article_title' => '111sq',
+            'article_content' => '2222'
+        ]);
+具体的可以看看他的文档
+
+关于模型：
+模型的话继承model类即可 不需要自己手动实例化和实例化配置。
+
+session
+set($key,$value='')
+get($key)
+has($key)
+delete($key)
+delall()
+
+cookie
+set($key, $value, $expire = 3600)
+ get($key, $default = NULL)
+del($key)
+
+use shenphp\lib\Paginator;
+
+$totalItems = 1000;
+//总条数
+$itemsPerPage = 50;
+///每页条数
+$currentPage = 8;
+//当前页数
+$urlPattern = '/foo/page/(:num)';
+//地址
+
+***分页
+$paginator = new Paginator($totalItems, $itemsPerPage, $currentPage, $urlPattern);
+
+?>
+<html>
+  <head>
+    <!-- The default, built-in template supports the Twitter Bootstrap pagination styles. -->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  </head>
+  <body>
+
+    <?php 
+      // Example of rendering the pagination control with the built-in template.
+      // See below for information about using other templates or custom rendering.
+
+      echo $paginator; 
+    ?>
+    
+  </body>
+</html>
+
+验证类：
+一个简单的验证
+静态方法调用Validate::yanzheng($data,$rule)
+
+【注意：编辑时 验证是否存在 需要自己查询数据库咯 因为不能确定验证值】
+待验证的数据必须为数组。
+验证规则必须为数组
+验证规则如下
+
+$rule=['title|标题'=>'isEmpty,isNum','title|标题'=>'isEmpty']
+前面为字段，后面为规则
+
+全部内置规则
+
+isNum----验证是否为数字(只能为数字)
+isEmail----验证是否为邮箱(只能为邮箱)
+isMobile---验证是否为手机号(只能为手机号)
+isUrl---验证是否为url(只能为url)
+isfloat---验证是否为浮点数字(只能为浮点小数)
+isEmpty----验证是否存在(不能为空)
+min|1----长度至少为1
+max|100----长度最大100
+unique:article----验证是否存在数据库 不存在返回真article为表名 前缀配置的可以不带前缀
+成功返回true 失败返回false
+
+输出错误信息
+
+$rule=['article_title|文章标题'=>'isEmpty,max|2'];
+if(!Validate::yanZheng($param,$rule)){
+    dump(Validate::$error);
+}
+dump(Validate::$error);
+
+
+***url生成
+
+按照钱路由生成
+
+url('',数组);
+
+url('app/index/index',['page'=>3,'id'=>5,'qq'=>3333])
